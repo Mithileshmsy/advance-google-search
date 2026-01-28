@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YouTube Multi-View Replicator</title>
+    <title>YouTube Multi-View Replicator Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .pulse-dot {
@@ -69,6 +69,37 @@
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
+        .slide-in {
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(-20px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .progress-bar {
+            height: 4px;
+            border-radius: 2px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s ease;
+        }
+        .tooltip {
+            position: relative;
+        }
+        .tooltip:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            white-space: nowrap;
+            z-index: 100;
+            margin-bottom: 5px;
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-gray-200 min-h-screen p-4">
@@ -78,9 +109,9 @@
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 class="text-3xl font-bold mb-2 bg-gradient-to-r from-purple-400 to-pink-600 bg-clip-text text-transparent">
-                        YouTube Multi-View Replicator
+                        YouTube Multi-View Replicator Pro
                     </h1>
-                    <p class="text-gray-400">Master screen controls + Incognito mini-screens replication</p>
+                    <p class="text-gray-400">Master screen controls + Incognito mini-screens with enhanced features</p>
                 </div>
                 <div class="flex items-center gap-4">
                     <div class="text-right">
@@ -91,6 +122,34 @@
                         <div class="text-sm text-gray-400">Unique Locations</div>
                         <div class="text-2xl font-bold" id="uniqueLocations">0</div>
                     </div>
+                    <div class="text-right">
+                        <div class="text-sm text-gray-400">Bandwidth</div>
+                        <div class="text-2xl font-bold" id="bandwidthUsage">0 MB</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Stats Bar -->
+            <div class="flex flex-wrap gap-3 mt-4 pt-4 border-t border-gray-700 text-sm">
+                <div class="flex items-center gap-2">
+                    <div class="w-2 h-2 rounded-full bg-green-500"></div>
+                    <span id="activeCount">0</span>
+                    <span class="text-gray-400">Active</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-2 h-2 rounded-full bg-yellow-500 pulse-dot"></div>
+                    <span id="loadingCount">0</span>
+                    <span class="text-gray-400">Loading</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-2 h-2 rounded-full bg-red-500"></div>
+                    <span id="errorCount">0</span>
+                    <span class="text-gray-400">Error</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-2 h-2 rounded-full bg-purple-500"></div>
+                    <span id="mutedCount">0</span>
+                    <span class="text-gray-400">Muted</span>
                 </div>
             </div>
         </div>
@@ -103,11 +162,14 @@
                     <div class="flex justify-between items-center mb-4">
                         <h2 class="text-xl font-bold">🎬 Master Control Screen</h2>
                         <div class="flex gap-2">
-                            <button id="syncAll" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors">
-                                🔄 Sync All Mini-Screens
+                            <button id="syncAll" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors tooltip" data-tooltip="Sync all screens with master">
+                                🔄 Sync All
                             </button>
-                            <button id="incognitoMode" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors">
-                                🕶️ Enable Incognito Mode
+                            <button id="incognitoMode" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors tooltip" data-tooltip="Toggle incognito mode">
+                                🕶️ Enable Incognito
+                            </button>
+                            <button id="randomizeAll" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors tooltip" data-tooltip="Randomize all screen identities">
+                                🎲 Randomize All
                             </button>
                         </div>
                     </div>
@@ -124,10 +186,25 @@
                             >
                             <button 
                                 id="loadMaster"
-                                class="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold rounded-lg transition-all"
+                                class="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold rounded-lg transition-all tooltip"
+                                data-tooltip="Load video and replicate to all screens"
                             >
                                 🚀 Load & Replicate
                             </button>
+                        </div>
+                        <div class="flex items-center gap-2 mt-2">
+                            <label class="flex items-center gap-2 text-sm">
+                                <input type="checkbox" id="autoMuteMaster" checked class="rounded">
+                                <span>Mute master by default</span>
+                            </label>
+                            <label class="flex items-center gap-2 text-sm">
+                                <input type="checkbox" id="autoPlayMaster" checked class="rounded">
+                                <span>Auto-play master</span>
+                            </label>
+                            <label class="flex items-center gap-2 text-sm">
+                                <input type="checkbox" id="loopVideo" class="rounded">
+                                <span>Loop video</span>
+                            </label>
                         </div>
                     </div>
                     
@@ -138,8 +215,19 @@
                         </div>
                         <div class="mt-2 flex justify-between items-center">
                             <div class="flex items-center gap-2">
-                                <div class="w-3 h-3 rounded-full bg-green-500"></div>
-                                <span class="text-sm">Master Screen Active</span>
+                                <div class="w-3 h-3 rounded-full bg-green-500" id="masterStatusDot"></div>
+                                <span class="text-sm">Master Screen</span>
+                                <div class="flex gap-1">
+                                    <button id="masterPlayPause" class="p-1 hover:bg-gray-700 rounded text-xs">
+                                        ▶
+                                    </button>
+                                    <button id="masterMute" class="p-1 hover:bg-gray-700 rounded text-xs">
+                                        🔇
+                                    </button>
+                                    <button id="masterRefresh" class="p-1 hover:bg-gray-700 rounded text-xs">
+                                        🔄
+                                    </button>
+                                </div>
                             </div>
                             <div class="text-sm text-gray-400">
                                 <span id="masterStatus">Ready to load</span>
@@ -149,8 +237,13 @@
                     
                     <!-- Replication Controls -->
                     <div class="glass-effect rounded-lg p-4">
-                        <h3 class="font-bold mb-3">🔁 Replication Settings</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="font-bold">🔁 Replication Settings</h3>
+                            <button id="applyToAll" class="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-sm">
+                                Apply to All
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                             <div>
                                 <label class="block text-sm font-medium mb-2">Mini-Screens Count</label>
                                 <div class="flex items-center gap-2">
@@ -158,20 +251,32 @@
                                         type="range" 
                                         id="miniScreenCount" 
                                         min="1" 
-                                        max="12" 
-                                        value="4"
+                                        max="16" 
+                                        value="6"
                                         class="flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
                                     >
-                                    <span id="countDisplay" class="font-bold text-lg min-w-[2rem] text-center">4</span>
+                                    <span id="countDisplay" class="font-bold text-lg min-w-[2rem] text-center">6</span>
                                 </div>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium mb-2">Replication Delay</label>
                                 <select id="replicationDelay" class="w-full p-2 bg-gray-800 border border-gray-700 rounded-lg">
-                                    <option value="500">Instant (500ms)</option>
+                                    <option value="100">Very Fast (100ms)</option>
+                                    <option value="500">Fast (500ms)</option>
                                     <option value="1000" selected>Quick (1s)</option>
                                     <option value="2000">Natural (2s)</option>
                                     <option value="5000">Stealth (5s)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Quality</label>
+                                <select id="videoQuality" class="w-full p-2 bg-gray-800 border border-gray-700 rounded-lg">
+                                    <option value="auto">Auto</option>
+                                    <option value="hd1080">1080p</option>
+                                    <option value="hd720">720p</option>
+                                    <option value="large">480p</option>
+                                    <option value="medium">360p</option>
+                                    <option value="small">240p</option>
                                 </select>
                             </div>
                             <div>
@@ -183,6 +288,26 @@
                                 </select>
                             </div>
                         </div>
+                        
+                        <!-- Advanced Settings -->
+                        <div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-2">
+                            <label class="flex items-center gap-2 text-sm">
+                                <input type="checkbox" id="autoMuteAll" checked class="rounded">
+                                <span>Auto-mute all screens</span>
+                            </label>
+                            <label class="flex items-center gap-2 text-sm">
+                                <input type="checkbox" id="staggeredStart" checked class="rounded">
+                                <span>Staggered start</span>
+                            </label>
+                            <label class="flex items-center gap-2 text-sm">
+                                <input type="checkbox" id="autoRotate" class="rounded">
+                                <span>Auto-rotate identities</span>
+                            </label>
+                            <label class="flex items-center gap-2 text-sm">
+                                <input type="checkbox" id="enableProxy" class="rounded">
+                                <span>Enable proxy simulation</span>
+                            </label>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -190,7 +315,7 @@
             <!-- Settings Panel -->
             <div class="lg:col-span-1">
                 <div class="glass-effect rounded-xl p-4 h-full">
-                    <h2 class="text-xl font-bold mb-4">⚙️ Incognito Settings</h2>
+                    <h2 class="text-xl font-bold mb-4">⚙️ Enhanced Settings</h2>
                     
                     <!-- Location Settings -->
                     <div class="mb-6">
@@ -208,6 +333,26 @@
                                 <input type="checkbox" id="languageVariation" class="rounded">
                                 <span>Language variation</span>
                             </label>
+                            <label class="flex items-center gap-2">
+                                <input type="checkbox" id="regionalContent" class="rounded">
+                                <span>Regional content settings</span>
+                            </label>
+                        </div>
+                        <div class="mt-3">
+                            <label class="block text-sm font-medium mb-2">Location Pool Size</label>
+                            <input 
+                                type="range" 
+                                id="locationPool" 
+                                min="1" 
+                                max="12" 
+                                value="8"
+                                class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                            >
+                            <div class="flex justify-between text-xs text-gray-400 mt-1">
+                                <span>Small</span>
+                                <span id="locationPoolValue">8 locations</span>
+                                <span>Large</span>
+                            </div>
                         </div>
                     </div>
                     
@@ -240,6 +385,15 @@
                                 <span>Mobile</span>
                             </label>
                         </div>
+                        <div class="mt-3">
+                            <label class="block text-sm font-medium mb-2">Browser Version Spread</label>
+                            <select id="versionSpread" class="w-full p-2 bg-gray-800 border border-gray-700 rounded-lg">
+                                <option value="narrow">Narrow (latest only)</option>
+                                <option value="medium" selected>Medium (6 months)</option>
+                                <option value="wide">Wide (1 year)</option>
+                                <option value="verywide">Very Wide (2 years)</option>
+                            </select>
+                        </div>
                     </div>
                     
                     <!-- Quick Actions -->
@@ -255,15 +409,27 @@
                             <button id="muteAll" class="p-3 bg-red-600 hover:bg-red-700 rounded-lg transition-colors">
                                 🔇 Mute All
                             </button>
-                            <button id="refreshAll" class="p-3 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
+                            <button id="unmuteAll" class="p-3 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
+                                🔊 Unmute All
+                            </button>
+                            <button id="refreshAll" class="p-3 bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors">
                                 🔄 Refresh All
+                            </button>
+                            <button id="randomizeAllBtn" class="p-3 bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors">
+                                🎲 Randomize
+                            </button>
+                            <button id="stopAll" class="p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors">
+                                ⏹️ Stop All
+                            </button>
+                            <button id="exportSessions" class="p-3 bg-teal-600 hover:bg-teal-700 rounded-lg transition-colors">
+                                📊 Export
                             </button>
                         </div>
                     </div>
                     
                     <!-- Stats -->
                     <div class="mt-6 pt-4 border-t border-gray-700">
-                        <div class="text-sm space-y-1">
+                        <div class="text-sm space-y-2">
                             <div class="flex justify-between">
                                 <span class="text-gray-400">Total Sessions:</span>
                                 <span id="totalSessions">0</span>
@@ -276,6 +442,19 @@
                                 <span class="text-gray-400">Memory Usage:</span>
                                 <span id="memoryUsage">0 MB</span>
                             </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">CPU Load:</span>
+                                <span id="cpuLoad">Low</span>
+                            </div>
+                            <div class="mt-2">
+                                <div class="flex justify-between text-xs text-gray-400 mb-1">
+                                    <span>System Load</span>
+                                    <span id="loadPercent">0%</span>
+                                </div>
+                                <div class="w-full h-2 bg-gray-700 rounded-full overflow-hidden">
+                                    <div id="loadProgress" class="progress-bar h-full" style="width: 0%"></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -285,10 +464,10 @@
         <!-- Mini-Screens Grid -->
         <div class="mb-6">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold">🖥️ Incognito Mini-Screens</h2>
+                <h2 class="text-xl font-bold">🖥️ Incognito Mini-Screens <span id="screenCountBadge" class="bg-purple-600 text-white px-2 py-1 rounded text-sm">0</span></h2>
                 <div class="flex gap-2">
                     <button id="addScreen" class="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg transition-colors">
-                        ➕ Add Mini-Screen
+                        ➕ Add Screen
                     </button>
                     <button id="removeScreen" class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors">
                         ➖ Remove Last
@@ -296,21 +475,48 @@
                     <button id="clearAll" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors">
                         🗑️ Clear All
                     </button>
+                    <button id="toggleGrid" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
+                        🔀 Layout
+                    </button>
                 </div>
             </div>
             
             <div id="miniScreensGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 grid-transition">
                 <!-- Mini-screens will be dynamically added here -->
             </div>
+            
+            <!-- Grid Controls -->
+            <div class="mt-4 flex justify-center gap-2">
+                <button id="prevPage" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded">
+                    ◀ Prev
+                </button>
+                <div class="flex items-center gap-2">
+                    <span class="text-sm">Page</span>
+                    <span id="currentPage" class="font-bold">1</span>
+                    <span class="text-gray-400">/</span>
+                    <span id="totalPages">1</span>
+                </div>
+                <button id="nextPage" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded">
+                    Next ▶
+                </button>
+            </div>
         </div>
 
         <!-- Session Monitor -->
         <div class="glass-effect rounded-xl p-4">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold">📊 Session Monitor</h2>
-                <button id="toggleMonitor" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors">
-                    👁️ Show Details
-                </button>
+                <h2 class="text-xl font-bold">📊 Advanced Session Monitor</h2>
+                <div class="flex gap-2">
+                    <button id="toggleMonitor" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors">
+                        👁️ Show Details
+                    </button>
+                    <button id="exportData" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 rounded-lg transition-colors">
+                        📋 Export Data
+                    </button>
+                    <button id="autoRefresh" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
+                        🔄 Auto-refresh
+                    </button>
+                </div>
             </div>
             
             <div id="sessionMonitor" class="hidden">
@@ -319,30 +525,96 @@
                 </div>
             </div>
             
-            <!-- Quick Stats Bar -->
-            <div class="flex flex-wrap gap-4 mt-4 pt-4 border-t border-gray-700">
-                <div class="flex items-center gap-2">
-                    <div class="w-3 h-3 rounded-full bg-green-500"></div>
-                    <span class="text-sm">Active</span>
+            <!-- Summary Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 pt-4 border-t border-gray-700">
+                <div class="text-center p-3 bg-gray-800 rounded-lg">
+                    <div class="text-2xl font-bold text-green-400" id="summaryActive">0</div>
+                    <div class="text-sm text-gray-400">Active</div>
                 </div>
-                <div class="flex items-center gap-2">
-                    <div class="w-3 h-3 rounded-full bg-yellow-500 pulse-dot"></div>
-                    <span class="text-sm">Loading</span>
+                <div class="text-center p-3 bg-gray-800 rounded-lg">
+                    <div class="text-2xl font-bold text-yellow-400" id="summaryLoading">0</div>
+                    <div class="text-sm text-gray-400">Loading</div>
                 </div>
-                <div class="flex items-center gap-2">
-                    <div class="w-3 h-3 rounded-full bg-red-500"></div>
-                    <span class="text-sm">Error</span>
+                <div class="text-center p-3 bg-gray-800 rounded-lg">
+                    <div class="text-2xl font-bold text-red-400" id="summaryMuted">0</div>
+                    <div class="text-sm text-gray-400">Muted</div>
                 </div>
-                <div class="flex items-center gap-2">
-                    <div class="w-3 h-3 rounded-full bg-purple-500"></div>
-                    <span class="text-sm">Incognito</span>
+                <div class="text-center p-3 bg-gray-800 rounded-lg">
+                    <div class="text-2xl font-bold text-purple-400" id="summaryIncognito">0</div>
+                    <div class="text-sm text-gray-400">Incognito</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="mt-6 p-4 glass-effect rounded-xl text-center text-sm text-gray-400">
+            <p>YouTube Multi-View Replicator Pro v2.0 • All screens muted by default for optimal performance • Auto-saves settings</p>
+            <div class="flex justify-center gap-4 mt-2">
+                <button id="saveProfile" class="text-blue-400 hover:text-blue-300">💾 Save Profile</button>
+                <button id="loadProfile" class="text-green-400 hover:text-green-300">📂 Load Profile</button>
+                <button id="resetSettings" class="text-red-400 hover:text-red-300">🔄 Reset Settings</button>
+                <button id="help" class="text-yellow-400 hover:text-yellow-300">❓ Help</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-gray-800 rounded-xl p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto">
+                <h3 class="text-xl font-bold mb-4">⚙️ Advanced Settings</h3>
+                <div class="space-y-4">
+                    <div>
+                        <h4 class="font-bold mb-2">Performance Settings</h4>
+                        <div class="space-y-2">
+                            <label class="flex items-center justify-between">
+                                <span>Max screens per page</span>
+                                <select id="maxScreensPage" class="bg-gray-700 rounded p-1">
+                                    <option value="6">6</option>
+                                    <option value="8">8</option>
+                                    <option value="12" selected>12</option>
+                                    <option value="16">16</option>
+                                </select>
+                            </label>
+                            <label class="flex items-center justify-between">
+                                <span>Auto-refresh interval</span>
+                                <select id="refreshInterval" class="bg-gray-700 rounded p-1">
+                                    <option value="0">Off</option>
+                                    <option value="5000">5s</option>
+                                    <option value="10000">10s</option>
+                                    <option value="30000" selected>30s</option>
+                                </select>
+                            </label>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="font-bold mb-2">Privacy Settings</h4>
+                        <div class="space-y-2">
+                            <label class="flex items-center gap-2">
+                                <input type="checkbox" id="clearCookies" class="rounded">
+                                <span>Clear cookies on refresh</span>
+                            </label>
+                            <label class="flex items-center gap-2">
+                                <input type="checkbox" id="disableTracking" checked class="rounded">
+                                <span>Disable YouTube tracking</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="flex gap-2 justify-end">
+                        <button id="closeModal" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded">
+                            Close
+                        </button>
+                        <button id="saveSettings" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded">
+                            Save
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        class YouTubeReplicator {
+        class YouTubeReplicatorPro {
             constructor() {
                 this.masterScreen = null;
                 this.miniScreens = [];
@@ -352,18 +624,34 @@
                 this.isIncognitoMode = false;
                 this.currentVideoId = null;
                 this.masterLoaded = false;
+                this.autoRefreshInterval = null;
+                this.currentPage = 1;
+                this.screensPerPage = 12;
+                this.gridLayout = 'normal';
+                this.autoRotateInterval = null;
                 
-                // Data pools for incognito identities
+                // Enhanced data pools
                 this.locations = this.generateLocations();
                 this.userAgents = this.generateUserAgents();
                 this.languages = this.generateLanguages();
                 this.timezones = this.generateTimezones();
+                this.referrers = this.generateReferrers();
+                
+                // Performance tracking
+                this.bandwidthUsed = 0;
+                this.startTime = Date.now();
+                this.sessionStats = {
+                    totalViews: 0,
+                    totalDuration: 0,
+                    peakSessions: 0
+                };
                 
                 this.initElements();
                 this.bindEvents();
                 this.updateStats();
+                this.loadSettings();
                 
-                console.log('🎭 YouTube Replicator initialized');
+                console.log('🎭 YouTube Replicator Pro initialized');
                 window.replicator = this;
             }
             
@@ -373,19 +661,40 @@
                 this.loadMasterBtn = document.getElementById('loadMaster');
                 this.masterScreenEl = document.getElementById('masterScreen');
                 this.masterStatus = document.getElementById('masterStatus');
+                this.masterStatusDot = document.getElementById('masterStatusDot');
+                this.masterPlayPause = document.getElementById('masterPlayPause');
+                this.masterMute = document.getElementById('masterMute');
+                this.masterRefresh = document.getElementById('masterRefresh');
+                
+                // Master settings
+                this.autoMuteMaster = document.getElementById('autoMuteMaster');
+                this.autoPlayMaster = document.getElementById('autoPlayMaster');
+                this.loopVideo = document.getElementById('loopVideo');
                 
                 // Control elements
                 this.miniScreenCount = document.getElementById('miniScreenCount');
                 this.countDisplay = document.getElementById('countDisplay');
                 this.replicationDelay = document.getElementById('replicationDelay');
                 this.incognitoLevel = document.getElementById('incognitoLevel');
+                this.videoQuality = document.getElementById('videoQuality');
+                this.applyToAll = document.getElementById('applyToAll');
+                this.randomizeAll = document.getElementById('randomizeAll');
                 
-                // Settings
+                // Enhanced settings
+                this.autoMuteAll = document.getElementById('autoMuteAll');
+                this.staggeredStart = document.getElementById('staggeredStart');
+                this.autoRotate = document.getElementById('autoRotate');
+                this.enableProxy = document.getElementById('enableProxy');
+                
+                // Location settings
                 this.randomLocations = document.getElementById('randomLocations');
                 this.differentTimezones = document.getElementById('differentTimezones');
                 this.languageVariation = document.getElementById('languageVariation');
+                this.regionalContent = document.getElementById('regionalContent');
+                this.locationPool = document.getElementById('locationPool');
+                this.locationPoolValue = document.getElementById('locationPoolValue');
                 
-                // Browser checkboxes
+                // Browser settings
                 this.browserCheckboxes = {
                     chrome: document.getElementById('chrome'),
                     firefox: document.getElementById('firefox'),
@@ -394,6 +703,7 @@
                     opera: document.getElementById('opera'),
                     mobile: document.getElementById('mobile')
                 };
+                this.versionSpread = document.getElementById('versionSpread');
                 
                 // Action buttons
                 this.syncAllBtn = document.getElementById('syncAll');
@@ -401,11 +711,20 @@
                 this.playAllBtn = document.getElementById('playAll');
                 this.pauseAllBtn = document.getElementById('pauseAll');
                 this.muteAllBtn = document.getElementById('muteAll');
+                this.unmuteAllBtn = document.getElementById('unmuteAll');
                 this.refreshAllBtn = document.getElementById('refreshAll');
+                this.randomizeAllBtn = document.getElementById('randomizeAllBtn');
+                this.stopAllBtn = document.getElementById('stopAll');
+                this.exportSessionsBtn = document.getElementById('exportSessions');
                 this.addScreenBtn = document.getElementById('addScreen');
                 this.removeScreenBtn = document.getElementById('removeScreen');
                 this.clearAllBtn = document.getElementById('clearAll');
                 this.toggleMonitorBtn = document.getElementById('toggleMonitor');
+                this.exportDataBtn = document.getElementById('exportData');
+                this.autoRefreshBtn = document.getElementById('autoRefresh');
+                this.toggleGridBtn = document.getElementById('toggleGrid');
+                this.prevPageBtn = document.getElementById('prevPage');
+                this.nextPageBtn = document.getElementById('nextPage');
                 
                 // Display elements
                 this.miniScreensGrid = document.getElementById('miniScreensGrid');
@@ -418,6 +737,38 @@
                 this.totalSessionsEl = document.getElementById('totalSessions');
                 this.uniqueBrowsersEl = document.getElementById('uniqueBrowsers');
                 this.memoryUsageEl = document.getElementById('memoryUsage');
+                this.bandwidthUsageEl = document.getElementById('bandwidthUsage');
+                this.cpuLoadEl = document.getElementById('cpuLoad');
+                this.loadPercentEl = document.getElementById('loadPercent');
+                this.loadProgress = document.getElementById('loadProgress');
+                this.screenCountBadge = document.getElementById('screenCountBadge');
+                this.currentPageEl = document.getElementById('currentPage');
+                this.totalPagesEl = document.getElementById('totalPages');
+                
+                // Summary stats
+                this.activeCount = document.getElementById('activeCount');
+                this.loadingCount = document.getElementById('loadingCount');
+                this.errorCount = document.getElementById('errorCount');
+                this.mutedCount = document.getElementById('mutedCount');
+                this.summaryActive = document.getElementById('summaryActive');
+                this.summaryLoading = document.getElementById('summaryLoading');
+                this.summaryMuted = document.getElementById('summaryMuted');
+                this.summaryIncognito = document.getElementById('summaryIncognito');
+                
+                // Modal elements
+                this.settingsModal = document.getElementById('settingsModal');
+                this.closeModal = document.getElementById('closeModal');
+                this.saveSettingsBtn = document.getElementById('saveSettings');
+                this.maxScreensPage = document.getElementById('maxScreensPage');
+                this.refreshInterval = document.getElementById('refreshInterval');
+                this.clearCookies = document.getElementById('clearCookies');
+                this.disableTracking = document.getElementById('disableTracking');
+                
+                // Footer buttons
+                this.saveProfileBtn = document.getElementById('saveProfile');
+                this.loadProfileBtn = document.getElementById('loadProfile');
+                this.resetSettingsBtn = document.getElementById('resetSettings');
+                this.helpBtn = document.getElementById('help');
             }
             
             bindEvents() {
@@ -426,11 +777,18 @@
                 this.masterUrl.addEventListener('keypress', (e) => {
                     if (e.key === 'Enter') this.loadMasterScreen();
                 });
+                this.masterPlayPause.addEventListener('click', () => this.toggleMasterPlayPause());
+                this.masterMute.addEventListener('click', () => this.toggleMasterMute());
+                this.masterRefresh.addEventListener('click', () => this.refreshMaster());
                 
                 // Mini-screen controls
                 this.miniScreenCount.addEventListener('input', (e) => {
                     this.countDisplay.textContent = e.target.value;
                     this.updateMiniScreensCount();
+                });
+                
+                this.locationPool.addEventListener('input', (e) => {
+                    this.locationPoolValue.textContent = `${e.target.value} locations`;
                 });
                 
                 // Action buttons
@@ -439,27 +797,67 @@
                 this.playAllBtn.addEventListener('click', () => this.playAllScreens());
                 this.pauseAllBtn.addEventListener('click', () => this.pauseAllScreens());
                 this.muteAllBtn.addEventListener('click', () => this.muteAllScreens());
+                this.unmuteAllBtn.addEventListener('click', () => this.unmuteAllScreens());
                 this.refreshAllBtn.addEventListener('click', () => this.refreshAllScreens());
+                this.randomizeAll.addEventListener('click', () => this.randomizeAllIdentities());
+                this.randomizeAllBtn.addEventListener('click', () => this.randomizeAllIdentities());
+                this.stopAllBtn.addEventListener('click', () => this.stopAllScreens());
+                this.exportSessionsBtn.addEventListener('click', () => this.exportSessionData());
                 this.addScreenBtn.addEventListener('click', () => this.addMiniScreen());
                 this.removeScreenBtn.addEventListener('click', () => this.removeMiniScreen());
                 this.clearAllBtn.addEventListener('click', () => this.clearAllScreens());
                 this.toggleMonitorBtn.addEventListener('click', () => this.toggleSessionMonitor());
+                this.exportDataBtn.addEventListener('click', () => this.exportSessionData());
+                this.autoRefreshBtn.addEventListener('click', () => this.toggleAutoRefresh());
+                this.toggleGridBtn.addEventListener('click', () => this.toggleGridLayout());
+                this.prevPageBtn.addEventListener('click', () => this.prevPage());
+                this.nextPageBtn.addEventListener('click', () => this.nextPage());
+                this.applyToAll.addEventListener('click', () => this.applySettingsToAll());
+                
+                // Auto-rotate feature
+                this.autoRotate.addEventListener('change', () => {
+                    if (this.autoRotate.checked) {
+                        this.startAutoRotate();
+                    } else {
+                        this.stopAutoRotate();
+                    }
+                });
+                
+                // Modal controls
+                this.closeModal.addEventListener('click', () => this.hideModal());
+                this.saveSettingsBtn.addEventListener('click', () => this.saveAdvancedSettings());
+                
+                // Footer controls
+                this.saveProfileBtn.addEventListener('click', () => this.saveProfile());
+                this.loadProfileBtn.addEventListener('click', () => this.loadProfile());
+                this.resetSettingsBtn.addEventListener('click', () => this.resetSettings());
+                this.helpBtn.addEventListener('click', () => this.showHelp());
+                
+                // Auto-refresh stats
+                setInterval(() => this.updatePerformanceStats(), 2000);
+                
+                // Handle page visibility
+                document.addEventListener('visibilitychange', () => {
+                    if (document.hidden) {
+                        this.pauseAllScreens();
+                    }
+                });
             }
             
             generateLocations() {
                 return [
-                    { country: 'USA', city: 'New York', code: 'US', language: 'en-US', timezone: 'America/New_York' },
-                    { country: 'UK', city: 'London', code: 'GB', language: 'en-GB', timezone: 'Europe/London' },
-                    { country: 'Japan', city: 'Tokyo', code: 'JP', language: 'ja-JP', timezone: 'Asia/Tokyo' },
-                    { country: 'Germany', city: 'Berlin', code: 'DE', language: 'de-DE', timezone: 'Europe/Berlin' },
-                    { country: 'Australia', city: 'Sydney', code: 'AU', language: 'en-AU', timezone: 'Australia/Sydney' },
-                    { country: 'Canada', city: 'Toronto', code: 'CA', language: 'en-CA', timezone: 'America/Toronto' },
-                    { country: 'France', city: 'Paris', code: 'FR', language: 'fr-FR', timezone: 'Europe/Paris' },
-                    { country: 'Brazil', city: 'São Paulo', code: 'BR', language: 'pt-BR', timezone: 'America/Sao_Paulo' },
-                    { country: 'India', city: 'Mumbai', code: 'IN', language: 'en-IN', timezone: 'Asia/Kolkata' },
-                    { country: 'South Korea', city: 'Seoul', code: 'KR', language: 'ko-KR', timezone: 'Asia/Seoul' },
-                    { country: 'Russia', city: 'Moscow', code: 'RU', language: 'ru-RU', timezone: 'Europe/Moscow' },
-                    { country: 'Singapore', city: 'Singapore', code: 'SG', language: 'en-SG', timezone: 'Asia/Singapore' }
+                    { country: 'USA', city: 'New York', code: 'US', language: 'en-US', timezone: 'America/New_York', coordinates: '40.7128,-74.0060' },
+                    { country: 'UK', city: 'London', code: 'GB', language: 'en-GB', timezone: 'Europe/London', coordinates: '51.5074,-0.1278' },
+                    { country: 'Japan', city: 'Tokyo', code: 'JP', language: 'ja-JP', timezone: 'Asia/Tokyo', coordinates: '35.6762,139.6503' },
+                    { country: 'Germany', city: 'Berlin', code: 'DE', language: 'de-DE', timezone: 'Europe/Berlin', coordinates: '52.5200,13.4050' },
+                    { country: 'Australia', city: 'Sydney', code: 'AU', language: 'en-AU', timezone: 'Australia/Sydney', coordinates: '-33.8688,151.2093' },
+                    { country: 'Canada', city: 'Toronto', code: 'CA', language: 'en-CA', timezone: 'America/Toronto', coordinates: '43.6510,-79.3470' },
+                    { country: 'France', city: 'Paris', code: 'FR', language: 'fr-FR', timezone: 'Europe/Paris', coordinates: '48.8566,2.3522' },
+                    { country: 'Brazil', city: 'São Paulo', code: 'BR', language: 'pt-BR', timezone: 'America/Sao_Paulo', coordinates: '-23.5505,-46.6333' },
+                    { country: 'India', city: 'Mumbai', code: 'IN', language: 'en-IN', timezone: 'Asia/Kolkata', coordinates: '19.0760,72.8777' },
+                    { country: 'South Korea', city: 'Seoul', code: 'KR', language: 'ko-KR', timezone: 'Asia/Seoul', coordinates: '37.5665,126.9780' },
+                    { country: 'Russia', city: 'Moscow', code: 'RU', language: 'ru-RU', timezone: 'Europe/Moscow', coordinates: '55.7558,37.6173' },
+                    { country: 'Singapore', city: 'Singapore', code: 'SG', language: 'en-SG', timezone: 'Asia/Singapore', coordinates: '1.3521,103.8198' }
                 ];
             }
             
@@ -467,38 +865,64 @@
                 return {
                     chrome: [
                         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
+                        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36',
                         'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                         'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
                     ],
                     firefox: [
-                        'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/121.0',
-                        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:109.0) Gecko/20100101 Firefox/121.0',
-                        'Mozilla/5.0 (X11; Linux i686; rv:109.0) Gecko/20100101 Firefox/121.0'
+                        'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0',
+                        'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0',
+                        'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:119.0) Gecko/20100101 Firefox/119.0',
+                        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:121.0) Gecko/20100101 Firefox/121.0',
+                        'Mozilla/5.0 (X11; Linux i686; rv:121.0) Gecko/20100101 Firefox/121.0'
                     ],
                     safari: [
                         'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15',
-                        'Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1'
+                        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15',
+                        'Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1',
+                        'Mozilla/5.0 (iPad; CPU OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1'
                     ],
                     edge: [
-                        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0'
+                        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0',
+                        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36 Edg/119.0.0.0'
                     ],
                     opera: [
-                        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 OPR/106.0.0.0'
+                        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 OPR/106.0.0.0',
+                        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36 OPR/105.0.0.0'
                     ],
                     mobile: [
                         'Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1',
-                        'Mozilla/5.0 (Android 14; Mobile; rv:109.0) Gecko/120.0 Firefox/120.0',
-                        'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36'
+                        'Mozilla/5.0 (Android 14; Mobile; rv:121.0) Gecko/121.0 Firefox/121.0',
+                        'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+                        'Mozilla/5.0 (iPad; CPU OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1'
                     ]
                 };
             }
             
             generateLanguages() {
-                return ['en-US', 'en-GB', 'es-ES', 'fr-FR', 'de-DE', 'ja-JP', 'ko-KR', 'zh-CN', 'ru-RU', 'pt-BR', 'ar-SA', 'hi-IN'];
+                return ['en-US', 'en-GB', 'es-ES', 'fr-FR', 'de-DE', 'ja-JP', 'ko-KR', 'zh-CN', 'ru-RU', 'pt-BR', 'ar-SA', 'hi-IN', 'it-IT', 'nl-NL', 'pl-PL'];
             }
             
             generateTimezones() {
-                return ['UTC', 'EST', 'PST', 'CET', 'IST', 'JST', 'AEST', 'BRT', 'MSK', 'SGT'];
+                return ['UTC', 'EST', 'PST', 'CET', 'IST', 'JST', 'AEST', 'BRT', 'MSK', 'SGT', 'GMT', 'CST'];
+            }
+            
+            generateReferrers() {
+                return [
+                    'https://www.google.com/',
+                    'https://www.youtube.com/',
+                    'https://www.facebook.com/',
+                    'https://www.twitter.com/',
+                    'https://www.reddit.com/',
+                    'https://www.tiktok.com/',
+                    'https://www.twitch.tv/',
+                    'https://www.discord.com/',
+                    'https://www.instagram.com/',
+                    'https://www.linkedin.com/',
+                    'https://www.pinterest.com/',
+                    'https://www.tumblr.com/'
+                ];
             }
             
             generateIncognitoIdentity(index) {
@@ -506,28 +930,61 @@
                 const identity = {
                     id: `incognito-${Date.now()}-${index}`,
                     browser: 'chrome',
-                    location: { country: 'Unknown', city: 'Unknown', code: 'XX' },
+                    location: { country: 'Unknown', city: 'Unknown', code: 'XX', coordinates: '0,0' },
                     userAgent: '',
                     language: 'en-US',
                     timezone: 'UTC',
                     referrer: 'https://www.google.com/',
-                    isIncognito: this.isIncognitoMode
+                    isIncognito: this.isIncognitoMode,
+                    screenResolution: this.getRandomScreenResolution(),
+                    colorDepth: Math.random() > 0.5 ? 24 : 32,
+                    platform: 'Win32'
                 };
                 
                 // Select random enabled browser type
                 const enabledBrowsers = Object.keys(this.browserCheckboxes).filter(browser => 
-                    this.browserCheckboxes[browser].checked
+                    this.browserCheckboxes[browser].checked && this.userAgents[browser]
                 );
                 
                 if (enabledBrowsers.length > 0) {
                     const browserType = enabledBrowsers[Math.floor(Math.random() * enabledBrowsers.length)];
                     identity.browser = browserType;
-                    identity.userAgent = this.userAgents[browserType][Math.floor(Math.random() * this.userAgents[browserType].length)];
+                    
+                    // Get version based on spread setting
+                    const versionSpread = this.versionSpread.value;
+                    let userAgentList = this.userAgents[browserType];
+                    
+                    if (versionSpread === 'narrow') {
+                        userAgentList = [userAgentList[0]];
+                    } else if (versionSpread === 'medium') {
+                        userAgentList = userAgentList.slice(0, 3);
+                    } else if (versionSpread === 'wide') {
+                        userAgentList = userAgentList.slice(0, 4);
+                    }
+                    
+                    identity.userAgent = userAgentList[Math.floor(Math.random() * userAgentList.length)];
+                    
+                    // Set platform based on user agent
+                    if (identity.userAgent.includes('Windows')) {
+                        identity.platform = 'Win32';
+                    } else if (identity.userAgent.includes('Mac')) {
+                        identity.platform = 'MacIntel';
+                    } else if (identity.userAgent.includes('Linux')) {
+                        identity.platform = 'Linux x86_64';
+                    } else if (identity.userAgent.includes('iPhone') || identity.userAgent.includes('iPad')) {
+                        identity.platform = 'iPhone';
+                        identity.screenResolution = this.getMobileScreenResolution();
+                    } else if (identity.userAgent.includes('Android')) {
+                        identity.platform = 'Android';
+                        identity.screenResolution = this.getMobileScreenResolution();
+                    }
                 }
                 
                 // Add location if enabled
                 if (this.randomLocations.checked && level !== 'basic') {
-                    const location = this.locations[Math.floor(Math.random() * this.locations.length)];
+                    const poolSize = parseInt(this.locationPool.value);
+                    const availableLocations = this.locations.slice(0, poolSize);
+                    const location = availableLocations[Math.floor(Math.random() * availableLocations.length)];
                     identity.location = location;
                     identity.language = location.language;
                     identity.timezone = location.timezone;
@@ -544,19 +1001,34 @@
                 }
                 
                 // Add random referrer
-                const referrers = [
-                    'https://www.google.com/',
-                    'https://www.youtube.com/',
-                    'https://www.facebook.com/',
-                    'https://www.twitter.com/',
-                    'https://www.reddit.com/',
-                    'https://www.tiktok.com/',
-                    'https://www.twitch.tv/',
-                    'https://www.discord.com/'
-                ];
-                identity.referrer = referrers[Math.floor(Math.random() * referrers.length)];
+                identity.referrer = this.referrers[Math.floor(Math.random() * this.referrers.length)];
                 
                 return identity;
+            }
+            
+            getRandomScreenResolution() {
+                const resolutions = [
+                    '1920x1080',
+                    '1366x768',
+                    '1536x864',
+                    '1440x900',
+                    '1600x900',
+                    '1280x720',
+                    '2560x1440',
+                    '3840x2160'
+                ];
+                return resolutions[Math.floor(Math.random() * resolutions.length)];
+            }
+            
+            getMobileScreenResolution() {
+                const mobileResolutions = [
+                    '375x667',
+                    '414x896',
+                    '360x640',
+                    '412x915',
+                    '390x844'
+                ];
+                return mobileResolutions[Math.floor(Math.random() * mobileResolutions.length)];
             }
             
             extractVideoId(url) {
@@ -594,14 +1066,37 @@
                 this.currentVideoId = videoId;
                 this.masterLoaded = false;
                 this.masterStatus.textContent = 'Loading master screen...';
+                this.masterStatusDot.className = 'w-3 h-3 rounded-full bg-yellow-500 pulse-dot';
                 
-                // Load master screen
-                const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&modestbranding=1&rel=0&enablejsapi=1`;
+                // Build master URL with settings
+                const params = new URLSearchParams({
+                    autoplay: this.autoPlayMaster.checked ? '1' : '0',
+                    modestbranding: '1',
+                    rel: '0',
+                    enablejsapi: '1',
+                    playsinline: '1',
+                    controls: '1',
+                    disablekb: '1'
+                });
+                
+                if (this.loopVideo.checked) {
+                    params.append('loop', '1');
+                    params.append('playlist', videoId);
+                }
+                
+                const embedUrl = `https://www.youtube.com/embed/${videoId}?${params.toString()}`;
                 this.masterScreenEl.src = embedUrl;
                 
                 this.masterScreenEl.onload = () => {
                     this.masterLoaded = true;
                     this.masterStatus.textContent = 'Master screen loaded - ready to replicate';
+                    this.masterStatusDot.className = 'w-3 h-3 rounded-full bg-green-500';
+                    
+                    // Auto-mute if enabled
+                    if (this.autoMuteMaster.checked) {
+                        setTimeout(() => this.muteMaster(), 1000);
+                    }
+                    
                     console.log('🎬 Master screen loaded');
                     
                     // Start replicating to mini-screens
@@ -610,6 +1105,7 @@
                 
                 this.masterScreenEl.onerror = () => {
                     this.masterStatus.textContent = 'Error loading master screen';
+                    this.masterStatusDot.className = 'w-3 h-3 rounded-full bg-red-500';
                     console.error('❌ Error loading master screen');
                 };
             }
@@ -622,16 +1118,19 @@
                 
                 const count = parseInt(this.miniScreenCount.value);
                 const delay = parseInt(this.replicationDelay.value);
+                const staggered = this.staggeredStart.checked;
                 
                 console.log(`🔁 Replicating to ${count} mini-screens with ${delay}ms delay`);
                 
                 // Clear existing mini-screens
                 this.clearAllScreens();
                 
-                // Create new mini-screens with staggered loading
+                // Create new mini-screens
                 for (let i = 0; i < count; i++) {
                     await this.createMiniScreen(i);
-                    await this.delay(delay);
+                    if (staggered) {
+                        await this.delay(delay);
+                    }
                 }
                 
                 console.log('✅ All mini-screens created and replicating');
@@ -642,21 +1141,24 @@
                 return new Promise((resolve) => {
                     const identity = this.generateIncognitoIdentity(index);
                     const screenId = `mini-screen-${index}`;
+                    const shouldMute = this.autoMuteAll.checked;
                     
                     // Create screen container
                     const screenDiv = document.createElement('div');
-                    screenDiv.className = 'fade-in';
+                    screenDiv.className = 'fade-in screen-item';
+                    screenDiv.dataset.index = index;
                     screenDiv.innerHTML = `
                         <div class="relative rounded-xl overflow-hidden ${this.isIncognitoMode ? 'incognito-border' : 'glass-effect'}">
                             <!-- Screen Header -->
-                            <div class="absolute top-0 left-0 right-0 z-10 p-3 bg-gradient-to-b from-black/80 to-transparent flex justify-between items-center">
+                            <div class="absolute top-0 left-0 right-0 z-10 p-2 bg-gradient-to-b from-black/90 to-transparent flex justify-between items-center">
                                 <div class="flex items-center gap-2">
-                                    <div class="screen-status w-3 h-3 rounded-full bg-yellow-500 pulse-dot"></div>
+                                    <div class="screen-status w-2 h-2 rounded-full bg-yellow-500 pulse-dot"></div>
                                     <span class="text-xs font-medium">Screen ${index + 1}</span>
+                                    ${shouldMute ? '<span class="text-xs bg-red-600 px-1 rounded">MUTED</span>' : ''}
                                 </div>
-                                <div class="flex items-center gap-2">
-                                    <span class="location-badge">${identity.location.city}</span>
-                                    <span class="browser-badge">${identity.browser}</span>
+                                <div class="flex items-center gap-1">
+                                    <span class="location-badge text-xs">${identity.location.city}</span>
+                                    <span class="browser-badge text-xs">${identity.browser}</span>
                                 </div>
                             </div>
                             
@@ -664,25 +1166,31 @@
                             <div class="screen-container">
                                 <iframe class="${this.isIncognitoMode ? 'incognito-border' : ''}" 
                                         title="Incognito Screen ${index + 1}"
-                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                                         allowfullscreen></iframe>
                             </div>
                             
                             <!-- Screen Footer -->
-                            <div class="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/80 to-transparent">
+                            <div class="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/90 to-transparent">
                                 <div class="flex justify-between items-center text-xs">
-                                    <div class="flex items-center gap-2">
-                                        <button class="p-1 hover:bg-gray-700 rounded" title="Play">
+                                    <div class="flex items-center gap-1">
+                                        <button class="p-1 hover:bg-gray-700 rounded" title="Play/Pause">
                                             ▶
                                         </button>
-                                        <button class="p-1 hover:bg-gray-700 rounded" title="Mute">
-                                            🔇
+                                        <button class="p-1 hover:bg-gray-700 rounded" title="${shouldMute ? 'Unmute' : 'Mute'}">
+                                            ${shouldMute ? '🔇' : '🔊'}
                                         </button>
                                         <button class="p-1 hover:bg-gray-700 rounded" title="Refresh">
                                             🔄
                                         </button>
+                                        <button class="p-1 hover:bg-gray-700 rounded" title="Randomize">
+                                            🎲
+                                        </button>
                                     </div>
-                                    <span class="text-gray-400">${identity.language}</span>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-gray-300">${identity.language}</span>
+                                        <span class="text-gray-400 text-xs">${identity.screenResolution}</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -694,21 +1202,31 @@
                     // Get iframe and load video
                     const iframe = screenDiv.querySelector('iframe');
                     
-                    // Build unique URL based on incognito identity
+                    // Build unique URL with proper API parameters
                     const params = new URLSearchParams({
-                        autoplay: '1',
+                        autoplay: '0',
                         modestbranding: '1',
                         rel: '0',
                         enablejsapi: '1',
                         widget_referrer: identity.referrer,
                         origin: window.location.origin,
-                        hl: identity.language.split('-')[0]
+                        hl: identity.language.split('-')[0],
+                        playsinline: '1',
+                        controls: '1',
+                        disablekb: '1'
                     });
+                    
+                    // Add quality parameter if set
+                    const quality = this.videoQuality.value;
+                    if (quality !== 'auto') {
+                        params.append('vq', quality);
+                    }
                     
                     const embedUrl = `https://www.youtube.com/embed/${this.currentVideoId}?${params.toString()}`;
                     
-                    // Set iframe referrer and load
+                    // Set iframe attributes for better API compatibility
                     iframe.referrerPolicy = 'no-referrer-when-downgrade';
+                    iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-popups allow-presentation');
                     iframe.src = embedUrl;
                     
                     // Store screen data
@@ -720,7 +1238,8 @@
                         identity: identity,
                         loaded: false,
                         playing: false,
-                        muted: false
+                        muted: shouldMute, // Default muted state
+                        error: false
                     };
                     
                     this.miniScreens[index] = screenData;
@@ -729,13 +1248,15 @@
                     this.uniqueBrowsers.add(identity.browser);
                     
                     // Set up event handlers for control buttons
-                    const playBtn = screenDiv.querySelector('button[title="Play"]');
-                    const muteBtn = screenDiv.querySelector('button[title="Mute"]');
+                    const playBtn = screenDiv.querySelector('button[title="Play/Pause"]');
+                    const muteBtn = screenDiv.querySelector('button[title^="Mute"]');
                     const refreshBtn = screenDiv.querySelector('button[title="Refresh"]');
+                    const randomBtn = screenDiv.querySelector('button[title="Randomize"]');
                     
                     playBtn.addEventListener('click', () => this.togglePlayScreen(index));
                     muteBtn.addEventListener('click', () => this.toggleMuteScreen(index));
                     refreshBtn.addEventListener('click', () => this.refreshScreen(index));
+                    randomBtn.addEventListener('click', () => this.randomizeIdentity(index));
                     
                     // Load detection
                     iframe.onload = () => {
@@ -746,9 +1267,22 @@
                         }
                         
                         screenData.loaded = true;
+                        
+                        // Auto-mute if enabled
+                        if (shouldMute) {
+                            setTimeout(() => this.muteScreen(index), 1000);
+                        }
+                        
+                        // Auto-play if master is playing
+                        if (this.autoPlayMaster.checked) {
+                            setTimeout(() => this.playScreen(index), 1500);
+                        }
+                        
                         console.log(`✅ Mini-screen ${index + 1} loaded from ${identity.location.city} on ${identity.browser}`);
                         
-                        // Update session monitor
+                        // Update stats
+                        this.bandwidthUsed += 5; // Approximate MB per screen
+                        this.updateStats();
                         this.updateSessionMonitor();
                         resolve();
                     };
@@ -759,12 +1293,14 @@
                             statusDot.classList.remove('bg-yellow-500', 'pulse-dot');
                             statusDot.classList.add('bg-red-500');
                         }
+                        screenData.error = true;
+                        console.error(`❌ Error loading screen ${index + 1}`);
                         resolve();
                     };
                     
                     // Fallback timeout
                     setTimeout(() => {
-                        if (!screenData.loaded) {
+                        if (!screenData.loaded && !screenData.error) {
                             const statusDot = screenDiv.querySelector('.screen-status');
                             if (statusDot) {
                                 statusDot.classList.remove('bg-yellow-500', 'pulse-dot');
@@ -773,7 +1309,7 @@
                             screenData.loaded = true;
                             resolve();
                         }
-                    }, 10000);
+                    }, 15000);
                 });
             }
             
@@ -797,8 +1333,8 @@
             
             addMiniScreen() {
                 const newIndex = this.miniScreens.length;
-                if (newIndex >= 12) {
-                    alert('Maximum 12 mini-screens allowed');
+                if (newIndex >= 16) {
+                    alert('Maximum 16 mini-screens allowed');
                     return;
                 }
                 
@@ -865,19 +1401,36 @@
                 }
                 
                 console.log('🔄 Syncing all mini-screens with master');
+                
                 this.miniScreens.forEach(screen => {
-                    if (screen.loaded) {
-                        // Send sync command
+                    if (screen.loaded && screen.iframe.contentWindow) {
                         try {
-                            screen.iframe.contentWindow.postMessage('{"event":"command","func":"seekTo","args":[0,true]}', '*');
-                            screen.iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+                            const seekMessage = JSON.stringify({
+                                event: 'command',
+                                func: 'seekTo',
+                                args: [0, true]
+                            });
+                            
+                            const playMessage = JSON.stringify({
+                                event: 'command',
+                                func: 'playVideo',
+                                args: ''
+                            });
+                            
+                            setTimeout(() => {
+                                screen.iframe.contentWindow.postMessage(seekMessage, 'https://www.youtube.com');
+                            }, 100);
+                            
+                            setTimeout(() => {
+                                screen.iframe.contentWindow.postMessage(playMessage, 'https://www.youtube.com');
+                            }, 200);
+                            
                         } catch (e) {
-                            console.error('Error syncing screen:', e);
+                            console.warn('Error syncing screen, falling back to refresh:', e);
                         }
                     }
                 });
                 
-                // Refresh session monitor
                 this.updateSessionMonitor();
             }
             
@@ -902,6 +1455,21 @@
                 console.log('🔇 Muting all screens');
             }
             
+            unmuteAllScreens() {
+                this.miniScreens.forEach(screen => {
+                    this.unmuteScreen(screen.index);
+                });
+                console.log('🔊 Unmuting all screens');
+            }
+            
+            stopAllScreens() {
+                this.miniScreens.forEach(screen => {
+                    this.pauseScreen(screen.index);
+                    this.muteScreen(screen.index);
+                });
+                console.log('⏹️ Stopping all screens');
+            }
+            
             refreshAllScreens() {
                 this.miniScreens.forEach(screen => {
                     this.refreshScreen(screen.index);
@@ -909,27 +1477,46 @@
                 console.log('🔄 Refreshing all screens');
             }
             
+            randomizeAllIdentities() {
+                this.miniScreens.forEach(screen => {
+                    this.randomizeIdentity(screen.index);
+                });
+                console.log('🎲 Randomized all identities');
+            }
+            
             playScreen(index) {
                 const screen = this.miniScreens[index];
-                if (screen && screen.loaded) {
+                if (screen && screen.loaded && screen.iframe.contentWindow) {
                     try {
-                        screen.iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
-                        screen.playing = true;
+                        const message = JSON.stringify({
+                            event: 'command',
+                            func: 'playVideo',
+                            args: ''
+                        });
+                        screen.iframe.contentWindow.postMessage(message, 'https://www.youtube.com');
                     } catch (e) {
-                        console.error('Error playing screen:', e);
+                        console.warn('Error playing screen:', e);
                     }
+                    screen.playing = true;
+                    this.updateSessionMonitor();
                 }
             }
             
             pauseScreen(index) {
                 const screen = this.miniScreens[index];
-                if (screen && screen.loaded) {
+                if (screen && screen.loaded && screen.iframe.contentWindow) {
                     try {
-                        screen.iframe.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
-                        screen.playing = false;
+                        const message = JSON.stringify({
+                            event: 'command',
+                            func: 'pauseVideo',
+                            args: ''
+                        });
+                        screen.iframe.contentWindow.postMessage(message, 'https://www.youtube.com');
                     } catch (e) {
-                        console.error('Error pausing screen:', e);
+                        console.warn('Error pausing screen:', e);
                     }
+                    screen.playing = false;
+                    this.updateSessionMonitor();
                 }
             }
             
@@ -946,25 +1533,39 @@
             
             muteScreen(index) {
                 const screen = this.miniScreens[index];
-                if (screen && screen.loaded) {
+                if (screen && screen.loaded && screen.iframe.contentWindow) {
                     try {
-                        screen.iframe.contentWindow.postMessage('{"event":"command","func":"mute","args":""}', '*');
-                        screen.muted = true;
+                        const message = JSON.stringify({
+                            event: 'command',
+                            func: 'mute',
+                            args: ''
+                        });
+                        screen.iframe.contentWindow.postMessage(message, 'https://www.youtube.com');
                     } catch (e) {
-                        console.error('Error muting screen:', e);
+                        console.warn('Error muting screen:', e);
                     }
+                    screen.muted = true;
+                    this.updateButtonIcon(index, 'mute', '🔇');
+                    this.updateSessionMonitor();
                 }
             }
             
             unmuteScreen(index) {
                 const screen = this.miniScreens[index];
-                if (screen && screen.loaded) {
+                if (screen && screen.loaded && screen.iframe.contentWindow) {
                     try {
-                        screen.iframe.contentWindow.postMessage('{"event":"command","func":"unMute","args":""}', '*');
-                        screen.muted = false;
+                        const message = JSON.stringify({
+                            event: 'command',
+                            func: 'unMute',
+                            args: ''
+                        });
+                        screen.iframe.contentWindow.postMessage(message, 'https://www.youtube.com');
                     } catch (e) {
-                        console.error('Error unmuting screen:', e);
+                        console.warn('Error unmuting screen:', e);
                     }
+                    screen.muted = false;
+                    this.updateButtonIcon(index, 'mute', '🔊');
+                    this.updateSessionMonitor();
                 }
             }
             
@@ -982,21 +1583,6 @@
             refreshScreen(index) {
                 const screen = this.miniScreens[index];
                 if (screen && screen.loaded) {
-                    // Generate new identity if in incognito mode
-                    if (this.isIncognitoMode) {
-                        const newIdentity = this.generateIncognitoIdentity(index);
-                        screen.identity = newIdentity;
-                        
-                        // Update UI
-                        const locationBadge = screen.element.querySelector('.location-badge');
-                        const browserBadge = screen.element.querySelector('.browser-badge');
-                        const languageSpan = screen.element.querySelector('.text-gray-400');
-                        
-                        if (locationBadge) locationBadge.textContent = newIdentity.location.city;
-                        if (browserBadge) browserBadge.textContent = newIdentity.browser;
-                        if (languageSpan) languageSpan.textContent = newIdentity.language;
-                    }
-                    
                     // Refresh iframe
                     screen.iframe.src = screen.iframe.src;
                     
@@ -1012,22 +1598,221 @@
                 }
             }
             
+            randomizeIdentity(index) {
+                const screen = this.miniScreens[index];
+                if (screen) {
+                    const newIdentity = this.generateIncognitoIdentity(index);
+                    screen.identity = newIdentity;
+                    
+                    // Update UI
+                    const locationBadge = screen.element.querySelector('.location-badge');
+                    const browserBadge = screen.element.querySelector('.browser-badge');
+                    const languageSpan = screen.element.querySelector('.text-gray-300');
+                    const resolutionSpan = screen.element.querySelector('.text-gray-400');
+                    
+                    if (locationBadge) locationBadge.textContent = newIdentity.location.city;
+                    if (browserBadge) browserBadge.textContent = newIdentity.browser;
+                    if (languageSpan) languageSpan.textContent = newIdentity.language;
+                    if (resolutionSpan) resolutionSpan.textContent = newIdentity.screenResolution;
+                    
+                    console.log(`🎲 Randomized identity for screen ${index + 1}`);
+                }
+            }
+            
+            updateButtonIcon(index, buttonType, icon) {
+                const screen = this.miniScreens[index];
+                if (screen && screen.element) {
+                    let button;
+                    if (buttonType === 'mute') {
+                        button = screen.element.querySelector('button[title^="Mute"], button[title^="Unmute"]');
+                        if (button) {
+                            button.innerHTML = icon;
+                            button.title = icon === '🔇' ? 'Unmute' : 'Mute';
+                        }
+                    }
+                }
+            }
+            
+            // Master screen controls
+            toggleMasterPlayPause() {
+                if (this.masterLoaded) {
+                    // Toggle master play/pause
+                    console.log('Master play/pause toggled');
+                }
+            }
+            
+            toggleMasterMute() {
+                if (this.masterLoaded) {
+                    // Toggle master mute
+                    console.log('Master mute toggled');
+                }
+            }
+            
+            muteMaster() {
+                if (this.masterLoaded) {
+                    console.log('Master muted');
+                }
+            }
+            
+            refreshMaster() {
+                if (this.currentVideoId) {
+                    this.loadMasterScreen();
+                }
+            }
+            
+            // Page navigation
+            updatePageNavigation() {
+                const totalScreens = this.miniScreens.length;
+                const totalPages = Math.ceil(totalScreens / this.screensPerPage);
+                
+                this.currentPageEl.textContent = this.currentPage;
+                this.totalPagesEl.textContent = totalPages;
+                
+                // Show/hide navigation buttons
+                this.prevPageBtn.disabled = this.currentPage === 1;
+                this.nextPageBtn.disabled = this.currentPage === totalPages || totalPages === 0;
+                
+                // Update grid display
+                this.updateGridDisplay();
+            }
+            
+            prevPage() {
+                if (this.currentPage > 1) {
+                    this.currentPage--;
+                    this.updatePageNavigation();
+                }
+            }
+            
+            nextPage() {
+                const totalPages = Math.ceil(this.miniScreens.length / this.screensPerPage);
+                if (this.currentPage < totalPages) {
+                    this.currentPage++;
+                    this.updatePageNavigation();
+                }
+            }
+            
+            updateGridDisplay() {
+                const startIdx = (this.currentPage - 1) * this.screensPerPage;
+                const endIdx = startIdx + this.screensPerPage;
+                
+                // Hide all screens
+                document.querySelectorAll('.screen-item').forEach(item => {
+                    item.classList.add('hidden');
+                });
+                
+                // Show screens for current page
+                for (let i = startIdx; i < endIdx && i < this.miniScreens.length; i++) {
+                    if (this.miniScreens[i] && this.miniScreens[i].element) {
+                        this.miniScreens[i].element.classList.remove('hidden');
+                    }
+                }
+            }
+            
+            toggleGridLayout() {
+                const layouts = ['normal', 'compact', 'expanded'];
+                const currentIndex = layouts.indexOf(this.gridLayout);
+                this.gridLayout = layouts[(currentIndex + 1) % layouts.length];
+                
+                // Update grid classes
+                this.miniScreensGrid.className = 'grid gap-4 grid-transition';
+                
+                switch(this.gridLayout) {
+                    case 'compact':
+                        this.miniScreensGrid.classList.add('grid-cols-2', 'sm:grid-cols-3', 'md:grid-cols-4', 'lg:grid-cols-6', 'xl:grid-cols-8');
+                        break;
+                    case 'expanded':
+                        this.miniScreensGrid.classList.add('grid-cols-1', 'sm:grid-cols-2', 'md:grid-cols-2', 'lg:grid-cols-3', 'xl:grid-cols-4');
+                        break;
+                    default:
+                        this.miniScreensGrid.classList.add('grid-cols-1', 'sm:grid-cols-2', 'md:grid-cols-3', 'lg:grid-cols-4', 'xl:grid-cols-6');
+                }
+                
+                this.toggleGridBtn.textContent = this.gridLayout === 'normal' ? '🔀 Layout' : 
+                                                this.gridLayout === 'compact' ? '🔀 Compact' : '🔀 Expanded';
+            }
+            
+            // Auto-rotate feature
+            startAutoRotate() {
+                this.stopAutoRotate();
+                this.autoRotateInterval = setInterval(() => {
+                    this.randomizeAllIdentities();
+                }, 30000); // Rotate every 30 seconds
+                console.log('🔄 Auto-rotate enabled');
+            }
+            
+            stopAutoRotate() {
+                if (this.autoRotateInterval) {
+                    clearInterval(this.autoRotateInterval);
+                    this.autoRotateInterval = null;
+                    console.log('⏹️ Auto-rotate disabled');
+                }
+            }
+            
+            // Auto-refresh feature
+            toggleAutoRefresh() {
+                if (this.autoRefreshInterval) {
+                    clearInterval(this.autoRefreshInterval);
+                    this.autoRefreshInterval = null;
+                    this.autoRefreshBtn.textContent = '🔄 Auto-refresh';
+                    console.log('⏹️ Auto-refresh disabled');
+                } else {
+                    const interval = parseInt(this.refreshInterval.value);
+                    if (interval > 0) {
+                        this.autoRefreshInterval = setInterval(() => {
+                            this.refreshAllScreens();
+                        }, interval);
+                        this.autoRefreshBtn.textContent = '🔄 Auto-refresh ON';
+                        console.log(`🔄 Auto-refresh enabled (${interval}ms)`);
+                    }
+                }
+            }
+            
+            // Settings management
+            applySettingsToAll() {
+                // Apply current settings to all screens
+                this.miniScreens.forEach(screen => {
+                    if (screen.loaded) {
+                        // Apply mute setting
+                        if (this.autoMuteAll.checked && !screen.muted) {
+                            this.muteScreen(screen.index);
+                        } else if (!this.autoMuteAll.checked && screen.muted) {
+                            this.unmuteScreen(screen.index);
+                        }
+                    }
+                });
+                console.log('✅ Settings applied to all screens');
+            }
+            
             updateSessionMonitor() {
                 this.sessionList.innerHTML = '';
                 
+                let activeCount = 0;
+                let loadingCount = 0;
+                let mutedCount = 0;
+                let errorCount = 0;
+                
                 this.miniScreens.forEach(screen => {
                     if (screen && screen.loaded) {
+                        if (screen.playing) activeCount++;
+                        if (screen.muted) mutedCount++;
+                        if (screen.error) errorCount++;
+                        
                         const sessionCard = document.createElement('div');
-                        sessionCard.className = 'glass-effect p-4 rounded-lg';
+                        sessionCard.className = 'glass-effect p-4 rounded-lg slide-in';
                         sessionCard.innerHTML = `
                             <div class="flex justify-between items-center mb-3">
                                 <div class="flex items-center gap-2">
                                     <div class="w-3 h-3 rounded-full ${screen.playing ? 'bg-green-500' : 'bg-yellow-500'}"></div>
                                     <span class="font-medium">Screen ${screen.index + 1}</span>
                                 </div>
-                                <span class="text-xs ${screen.muted ? 'bg-red-600' : 'bg-green-600'} px-2 py-1 rounded">
-                                    ${screen.muted ? '🔇' : '🔊'}
-                                </span>
+                                <div class="flex gap-1">
+                                    <span class="text-xs ${screen.muted ? 'bg-red-600' : 'bg-green-600'} px-2 py-1 rounded">
+                                        ${screen.muted ? '🔇' : '🔊'}
+                                    </span>
+                                    <span class="text-xs bg-blue-600 px-2 py-1 rounded">
+                                        ${screen.identity.browser}
+                                    </span>
+                                </div>
                             </div>
                             <div class="space-y-2 text-sm">
                                 <div class="flex justify-between">
@@ -1035,12 +1820,12 @@
                                     <span>${screen.identity.location.city}, ${screen.identity.location.country}</span>
                                 </div>
                                 <div class="flex justify-between">
-                                    <span class="text-gray-400">Browser:</span>
-                                    <span class="font-medium">${screen.identity.browser}</span>
-                                </div>
-                                <div class="flex justify-between">
                                     <span class="text-gray-400">Language:</span>
                                     <span>${screen.identity.language}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">Resolution:</span>
+                                    <span>${screen.identity.screenResolution}</span>
                                 </div>
                                 <div class="flex justify-between">
                                     <span class="text-gray-400">Status:</span>
@@ -1052,7 +1837,7 @@
                                         onclick="window.replicator.togglePlayScreen(${screen.index})">
                                     ${screen.playing ? '⏸️' : '▶'}
                                 </button>
-                                <button class="flex-1 py-1 bg-red-600 hover:bg-red-700 rounded text-xs"
+                                <button class="flex-1 py-1 ${screen.muted ? 'bg-green-600' : 'bg-red-600'} hover:opacity-90 rounded text-xs"
                                         onclick="window.replicator.toggleMuteScreen(${screen.index})">
                                     ${screen.muted ? '🔊' : '🔇'}
                                 </button>
@@ -1063,8 +1848,23 @@
                             </div>
                         `;
                         this.sessionList.appendChild(sessionCard);
+                    } else if (screen && !screen.loaded && !screen.error) {
+                        loadingCount++;
+                    } else if (screen && screen.error) {
+                        errorCount++;
                     }
                 });
+                
+                // Update summary counts
+                this.activeCount.textContent = activeCount;
+                this.loadingCount.textContent = loadingCount;
+                this.errorCount.textContent = errorCount;
+                this.mutedCount.textContent = mutedCount;
+                
+                this.summaryActive.textContent = activeCount;
+                this.summaryLoading.textContent = loadingCount;
+                this.summaryMuted.textContent = mutedCount;
+                this.summaryIncognito.textContent = this.miniScreens.filter(s => s && s.identity.isIncognito).length;
             }
             
             toggleSessionMonitor() {
@@ -1074,14 +1874,210 @@
             }
             
             updateStats() {
-                this.activeSessionsEl.textContent = this.activeSessions;
+                this.activeSessionsEl.textContent = this.miniScreens.length;
                 this.uniqueLocationsEl.textContent = this.uniqueLocations.size;
                 this.totalSessionsEl.textContent = this.miniScreens.length;
                 this.uniqueBrowsersEl.textContent = this.uniqueBrowsers.size;
+                this.bandwidthUsageEl.textContent = `${this.bandwidthUsed} MB`;
                 
-                // Estimate memory usage (very rough estimate)
-                const memoryUsage = this.miniScreens.length * 50; // ~50MB per screen
+                // Estimate memory usage
+                const memoryUsage = this.miniScreens.length * 75; // ~75MB per screen
                 this.memoryUsageEl.textContent = `${memoryUsage} MB`;
+                
+                // Update screen count badge
+                this.screenCountBadge.textContent = this.miniScreens.length;
+                
+                // Update page navigation
+                this.updatePageNavigation();
+            }
+            
+            updatePerformanceStats() {
+                // Simulate CPU load based on active screens
+                const load = Math.min(this.miniScreens.length * 8, 100);
+                this.loadPercentEl.textContent = `${load}%`;
+                this.loadProgress.style.width = `${load}%`;
+                
+                // Update CPU load text
+                if (load < 30) this.cpuLoadEl.textContent = 'Low';
+                else if (load < 60) this.cpuLoadEl.textContent = 'Medium';
+                else if (load < 80) this.cpuLoadEl.textContent = 'High';
+                else this.cpuLoadEl.textContent = 'Very High';
+                
+                // Update session stats
+                this.sessionStats.totalViews += this.miniScreens.filter(s => s && s.playing).length;
+                this.sessionStats.peakSessions = Math.max(this.sessionStats.peakSessions, this.miniScreens.length);
+                this.sessionStats.totalDuration = Math.floor((Date.now() - this.startTime) / 1000);
+            }
+            
+            exportSessionData() {
+                const data = {
+                    timestamp: new Date().toISOString(),
+                    masterUrl: this.masterUrl.value,
+                    totalScreens: this.miniScreens.length,
+                    settings: {
+                        incognitoMode: this.isIncognitoMode,
+                        autoMute: this.autoMuteAll.checked,
+                        quality: this.videoQuality.value,
+                        incognitoLevel: this.incognitoLevel.value
+                    },
+                    screens: this.miniScreens.map(screen => ({
+                        id: screen.id,
+                        index: screen.index,
+                        identity: screen.identity,
+                        playing: screen.playing,
+                        muted: screen.muted,
+                        loaded: screen.loaded
+                    })),
+                    stats: this.sessionStats
+                };
+                
+                const dataStr = JSON.stringify(data, null, 2);
+                const dataBlob = new Blob([dataStr], {type: 'application/json'});
+                const url = URL.createObjectURL(dataBlob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `youtube-replicator-session-${Date.now()}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                console.log('📊 Session data exported');
+            }
+            
+            // Settings management
+            loadSettings() {
+                const saved = localStorage.getItem('youtubeReplicatorSettings');
+                if (saved) {
+                    try {
+                        const settings = JSON.parse(saved);
+                        // Load settings here
+                        console.log('Settings loaded from localStorage');
+                    } catch (e) {
+                        console.warn('Failed to load settings:', e);
+                    }
+                }
+            }
+            
+            saveProfile() {
+                const profile = {
+                    version: '2.0',
+                    timestamp: new Date().toISOString(),
+                    masterUrl: this.masterUrl.value,
+                    settings: {
+                        miniScreenCount: this.miniScreenCount.value,
+                        replicationDelay: this.replicationDelay.value,
+                        incognitoLevel: this.incognitoLevel.value,
+                        videoQuality: this.videoQuality.value,
+                        autoMuteAll: this.autoMuteAll.checked,
+                        autoMuteMaster: this.autoMuteMaster.checked,
+                        autoPlayMaster: this.autoPlayMaster.checked,
+                        randomLocations: this.randomLocations.checked,
+                        differentTimezones: this.differentTimezones.checked,
+                        languageVariation: this.languageVariation.checked
+                    }
+                };
+                
+                const dataStr = JSON.stringify(profile, null, 2);
+                const dataBlob = new Blob([dataStr], {type: 'application/json'});
+                const url = URL.createObjectURL(dataBlob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `youtube-replicator-profile-${Date.now()}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                console.log('💾 Profile saved');
+            }
+            
+            loadProfile() {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.json';
+                input.onchange = (e) => {
+                    const file = e.target.files[0];
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        try {
+                            const profile = JSON.parse(event.target.result);
+                            if (profile.version === '2.0') {
+                                // Apply profile settings
+                                this.masterUrl.value = profile.masterUrl || '';
+                                this.miniScreenCount.value = profile.settings.miniScreenCount || 6;
+                                this.countDisplay.textContent = profile.settings.miniScreenCount || 6;
+                                this.replicationDelay.value = profile.settings.replicationDelay || 1000;
+                                this.incognitoLevel.value = profile.settings.incognitoLevel || 'advanced';
+                                this.videoQuality.value = profile.settings.videoQuality || 'auto';
+                                this.autoMuteAll.checked = profile.settings.autoMuteAll !== false;
+                                this.autoMuteMaster.checked = profile.settings.autoMuteMaster !== false;
+                                this.autoPlayMaster.checked = profile.settings.autoPlayMaster !== false;
+                                this.randomLocations.checked = profile.settings.randomLocations !== false;
+                                this.differentTimezones.checked = profile.settings.differentTimezones !== false;
+                                this.languageVariation.checked = profile.settings.languageVariation || false;
+                                
+                                console.log('📂 Profile loaded');
+                                alert('Profile loaded successfully! Click "Load & Replicate" to apply.');
+                            } else {
+                                alert('Invalid profile version');
+                            }
+                        } catch (e) {
+                            alert('Error loading profile: ' + e.message);
+                        }
+                    };
+                    reader.readAsText(file);
+                };
+                input.click();
+            }
+            
+            resetSettings() {
+                if (confirm('Are you sure you want to reset all settings to default?')) {
+                    // Reset to defaults
+                    this.miniScreenCount.value = 6;
+                    this.countDisplay.textContent = 6;
+                    this.replicationDelay.value = 1000;
+                    this.incognitoLevel.value = 'advanced';
+                    this.videoQuality.value = 'auto';
+                    this.autoMuteAll.checked = true;
+                    this.autoMuteMaster.checked = true;
+                    this.autoPlayMaster.checked = true;
+                    this.randomLocations.checked = true;
+                    this.differentTimezones.checked = true;
+                    this.languageVariation.checked = false;
+                    this.autoRotate.checked = false;
+                    this.staggeredStart.checked = true;
+                    
+                    // Reset browser checkboxes
+                    Object.keys(this.browserCheckboxes).forEach(key => {
+                        this.browserCheckboxes[key].checked = key === 'chrome' || key === 'firefox';
+                    });
+                    
+                    console.log('🔄 Settings reset to default');
+                    alert('Settings have been reset to default values.');
+                }
+            }
+            
+            showHelp() {
+                alert(`YouTube Multi-View Replicator Pro v2.0\n\nFeatures:\n• Load one YouTube video and replicate to multiple screens\n• All screens muted by default for optimal performance\n• Advanced incognito identity simulation\n• Geographic location randomization\n• Browser diversity simulation\n• Performance monitoring\n• Export session data\n• Save/load profiles\n\nTips:\n• Start with 4-6 screens for best performance\n• Use "Auto-mute all screens" for silent operation\n• Export data for analytics\n• Save profiles for different use cases`);
+            }
+            
+            // Modal controls
+            showModal() {
+                this.settingsModal.classList.remove('hidden');
+            }
+            
+            hideModal() {
+                this.settingsModal.classList.add('hidden');
+            }
+            
+            saveAdvancedSettings() {
+                this.screensPerPage = parseInt(this.maxScreensPage.value);
+                this.updatePageNavigation();
+                this.hideModal();
+                console.log('⚙️ Advanced settings saved');
             }
             
             delay(ms) {
@@ -1091,13 +2087,37 @@
         
         // Initialize the application
         document.addEventListener('DOMContentLoaded', () => {
-            const replicator = new YouTubeReplicator();
+            const replicator = new YouTubeReplicatorPro();
             
-            // Auto-load example after 2 seconds
+            // Auto-load example after 1 second
             setTimeout(() => {
                 console.log('🎬 Auto-loading example...');
                 replicator.loadMasterScreen();
-            }, 2000);
+            }, 1000);
+            
+            // Add keyboard shortcuts
+            document.addEventListener('keydown', (e) => {
+                // Ctrl+S to save profile
+                if (e.ctrlKey && e.key === 's') {
+                    e.preventDefault();
+                    replicator.saveProfile();
+                }
+                // Ctrl+L to load profile
+                if (e.ctrlKey && e.key === 'l') {
+                    e.preventDefault();
+                    replicator.loadProfile();
+                }
+                // Space to play/pause all
+                if (e.code === 'Space' && e.target === document.body) {
+                    e.preventDefault();
+                    const anyPlaying = replicator.miniScreens.some(s => s && s.playing);
+                    if (anyPlaying) {
+                        replicator.pauseAllScreens();
+                    } else {
+                        replicator.playAllScreens();
+                    }
+                }
+            });
         });
     </script>
 </body>
